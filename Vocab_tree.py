@@ -10,6 +10,7 @@ class Tree:
     self.center = center
     self.data = data #(n_samples, n_features)
     self.logK_Ki = None
+    self.visual_word_no = None
 
 
   def IsEmpty(self):
@@ -45,6 +46,7 @@ class HKMeans():
     self.b = b
     self.max_depth = depth
     self.root = Tree(self.data, 0)
+    self.vw_no = 0
     
   
   def ConstructVocab(self, data, b, depth, node):
@@ -52,6 +54,16 @@ class HKMeans():
       node.cluster(self.b)
       for child in node.children:
         self.ConstructVocab(child.data, self.b, depth-1, child)
+    else:
+      pass
+
+  def No_visualWords(self, node):
+    if node.IsLeafNode(self.max_depth):
+      node.visual_word_no = self.vw_no
+      self.vw_no += 1
+    elif not node.IsEmpty():
+      for child in node.children:
+        self.No_visualWords(child)
     else:
       pass
 
@@ -86,8 +98,11 @@ def main():
   depth = 2
   hk_means_obj = HKMeans(database_data, branch, depth)
   hk_means_obj.ConstructVocab(hk_means_obj.data, branch, depth, hk_means_obj.root)
+
+  hk_means_obj.No_visualWords(hk_means_obj.root)
+  print(hk_means_obj.vw_no)
   
-  
+
 
 
 main()  

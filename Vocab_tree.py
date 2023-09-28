@@ -8,7 +8,7 @@ class Tree:
     self.depth = depth #what is the current depth of the node
     self.children = []
     self.center = center
-    self.data = data
+    self.data = data #(n_samples, n_features)
     self.logK_Ki = None
 
 
@@ -66,15 +66,20 @@ def Transform_data(filename):
       for v in database_ft[key][i]:
         database_ft_ls.append(v)
       # print(len(database_ft[key][i]))
+
+  data = np.zeros((len(database_ft_ls), len(database_ft_ls[0])))
+  for i,v in enumerate(database_ft_ls):
+    data[i,:] = v
   
-  return database_ft_ls
+  return data
 
 
 def main():
 
   database_data = Transform_data('database_ft.pkl')
+  # print(database_data.shape )
+
   
-  print(len(database_data))
 
 
 main()  

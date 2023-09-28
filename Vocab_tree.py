@@ -13,11 +13,12 @@ class Tree:
 
 
   def IsEmpty(self):
-    return self.data == None
+    return len(self.data) == 0
   
   def cluster(self, branch_factor):
     #use KMeans algorithnm on data
-    kmeans = KMeans(n_clusters=branch_factor, random_state=0, n_init="auto")
+    # kmeans = KMeans(n_clusters=branch_factor, random_state=0, n_init="auto")
+    kmeans = KMeans(n_clusters=branch_factor)
     labels = kmeans.fit_predict(self.data, y=None, sample_weight=None)
     for i in range(branch_factor):
       # idx_i = [j for j,label in enumerate(labels) if label == i]
@@ -54,6 +55,8 @@ class HKMeans():
     else:
       pass
 
+
+
 def Transform_data(filename):
   # Read dictionary pkl file
   # with open('database_ft.pkl', 'rb') as fp:
@@ -79,6 +82,11 @@ def main():
   database_data = Transform_data('database_ft.pkl')
   # print(database_data.shape )
 
+  branch = 2
+  depth = 2
+  hk_means_obj = HKMeans(database_data, branch, depth)
+  hk_means_obj.ConstructVocab(hk_means_obj.data, branch, depth, hk_means_obj.root)
+  
   
 
 

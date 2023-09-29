@@ -1,6 +1,7 @@
 from sklearn.cluster import KMeans
 import pickle
 import numpy as np
+import copy
 
 class Tree:
 
@@ -11,6 +12,7 @@ class Tree:
     self.data = data #(n_samples, n_features)
     self.logK_Ki = None
     self.visual_word_no = None
+    self.kmeans = None
 
 
   def IsEmpty(self):
@@ -19,12 +21,12 @@ class Tree:
   def cluster(self, branch_factor):
     #use KMeans algorithnm on data
     # kmeans = KMeans(n_clusters=branch_factor, random_state=0, n_init="auto")
-    kmeans = KMeans(n_clusters=branch_factor)
-    labels = kmeans.fit_predict(self.data, y=None, sample_weight=None)
+    self.kmeans = KMeans(n_clusters=branch_factor)
+    labels = self.kmeans.fit_predict(self.data, y=None, sample_weight=None)
     for i in range(branch_factor):
       # idx_i = [j for j,label in enumerate(labels) if label == i]
       data_i = [d for j,d in enumerate(self.data) if labels[j] == i]
-      cluster_center_i = kmeans.cluster_centers_[i,:]
+      cluster_center_i = self.kmeans.cluster_centers_[i,:]
       child = Tree(data=data_i, depth=self.depth + 1,center=cluster_center_i)
       self.children.append(child)
     
@@ -89,6 +91,45 @@ def Transform_data(filename):
   return data
 
 
+def Binary_presence_vector(obj_vectors, hk_means_):
+  p_vector = np.zeros((hk_means_.vw_no,1), dtype = int)
+  for v in obj_vectors:
+    hk_means_obj = copy.copy(hk_means_)
+    vw_found = False
+    current_node = hk_means_obj.root
+    while not vw_found:
+      v = np.array(v)
+      v.reshape((1,len(v)))
+      # v.reshape(1,-1)
+      print(v.shape)
+      ind = current_node.kmeans.predict(v)
+      current_node = current_node.children[ind]
+      if current_node.isLeafNode(hk_means_obj.max_depth):
+        p_vector[current_node.vw_no] = 1
+        vw_found = True
+  
+  return p_vector
+
+def Read_data_obj(filename):
+  # Read dictionary pkl file
+  # with open('database_ft.pkl', 'rb') as fp:
+  with open(filename, 'rb') as fp:
+    database_ft = pickle.load(fp)
+
+  data_dict = {} 
+  
+  temp_ls = []
+  for key in database_ft:
+    temp_ls = []
+    for i in range(3):
+      for v in database_ft[key][i]:
+        temp_ls.append(v)
+    data_dict[key] = temp_ls
+  
+  return data_dict
+
+
+
 def main():
 
   database_data = Transform_data('database_ft.pkl')
@@ -100,7 +141,14 @@ def main():
   hk_means_obj.ConstructVocab(hk_means_obj.data, branch, depth, hk_means_obj.root)
 
   hk_means_obj.No_visualWords(hk_means_obj.root)
-  print(hk_means_obj.vw_no)
+  # print(hk_means_obj.vw_no)
+
+  database_dict = Read_data_obj('database_ft.pkl')
+  # print(len(database_dict[1]))
+  p_vector = Binary_presence_vector(database_dict[1], hk_means_obj)
+
+
+
   
 
 

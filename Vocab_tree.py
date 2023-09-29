@@ -97,18 +97,37 @@ def Binary_presence_vector(obj_vectors, hk_means_):
     hk_means_obj = copy.copy(hk_means_)
     vw_found = False
     current_node = hk_means_obj.root
+    v = np.array(v, dtype=float)
+    v = np.reshape(v,(1,len(v)))
+    # print(v.shape)
     while not vw_found:
-      v = np.array(v)
-      v.reshape((1,len(v)))
       # v.reshape(1,-1)
-      print(v.shape)
       ind = current_node.kmeans.predict(v)
-      current_node = current_node.children[ind]
-      if current_node.isLeafNode(hk_means_obj.max_depth):
-        p_vector[current_node.vw_no] = 1
+      current_node = current_node.children[ind[0]]
+      if current_node.IsLeafNode(hk_means_obj.max_depth):
+        p_vector[current_node.visual_word_no] = 1
         vw_found = True
   
   return p_vector
+
+# def Binary_presence_vector(obj_vectors, hk_means_):
+#   p_vector = np.zeros((hk_means_.vw_no,1), dtype = int)
+#   for v in obj_vectors:
+#     hk_means_obj = copy.copy(hk_means_)
+#     vw_found = False
+#     current_node = hk_means_obj.root
+#     while not vw_found:
+#       v = np.array(v)
+#       v.reshape((1,len(v)))
+#       # v.reshape(1,-1)
+#       print(v.shape)
+#       ind = current_node.kmeans.predict(v)
+#       current_node = current_node.children[ind]
+#       if current_node.isLeafNode(hk_means_obj.max_depth):
+#         p_vector[current_node.vw_no] = 1
+#         vw_found = True
+  
+#   return p_vector
 
 def Read_data_obj(filename):
   # Read dictionary pkl file
@@ -146,6 +165,7 @@ def main():
   database_dict = Read_data_obj('database_ft.pkl')
   # print(len(database_dict[1]))
   p_vector = Binary_presence_vector(database_dict[1], hk_means_obj)
+  print(p_vector)
 
 
 

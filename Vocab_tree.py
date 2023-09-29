@@ -164,8 +164,15 @@ def main():
 
   database_dict = Read_data_obj('database_ft.pkl')
   # print(len(database_dict[1]))
-  p_vector = Binary_presence_vector(database_dict[1], hk_means_obj)
-  print(p_vector)
+  # p_vector = Binary_presence_vector(database_dict[1], hk_means_obj)
+  # print(p_vector.shape)
+
+  Ki_vector = np.zeros((4,1), dtype=int)
+  for key in database_dict:
+    obj_vectors = database_dict[key]
+    p_vector = Binary_presence_vector(obj_vectors, hk_means_obj)
+    Ki_vector += p_vector
+  print(Ki_vector)
 
 
 

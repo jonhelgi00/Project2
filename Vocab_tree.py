@@ -69,6 +69,16 @@ class HKMeans():
     else:
       pass
 
+  def Assign_Ki(self, Ki_vector, node):
+    if node.IsLeafNode(self.max_depth):
+      K = 50
+      node.logK_Ki = np.log(K/Ki_vector[node.visual_word_no])
+    elif not node.IsEmpty():
+      for child in node.children:
+        self.Assign_Ki(Ki_vector, child)
+    else:
+      pass  
+
 
 
 def Transform_data(filename):
@@ -110,24 +120,26 @@ def Binary_presence_vector(obj_vectors, hk_means_):
   
   return p_vector
 
-# def Binary_presence_vector(obj_vectors, hk_means_):
-#   p_vector = np.zeros((hk_means_.vw_no,1), dtype = int)
-#   for v in obj_vectors:
-#     hk_means_obj = copy.copy(hk_means_)
-#     vw_found = False
-#     current_node = hk_means_obj.root
-#     while not vw_found:
-#       v = np.array(v)
-#       v.reshape((1,len(v)))
-#       # v.reshape(1,-1)
-#       print(v.shape)
-#       ind = current_node.kmeans.predict(v)
-#       current_node = current_node.children[ind]
-#       if current_node.isLeafNode(hk_means_obj.max_depth):
-#         p_vector[current_node.vw_no] = 1
-#         vw_found = True
+def Fij_vector(obj_vectors, hk_means_):
+  fij_vector = np.zeros((hk_means_.vw_no,1), dtype = int)
+  for v in obj_vectors:
+    hk_means_obj = copy.copy(hk_means_)
+    vw_found = False
+    current_node = hk_means_obj.root
+    v = np.array(v, dtype=float)
+    v = np.reshape(v,(1,len(v)))
+    # print(v.shape)
+    while not vw_found:
+      # v.reshape(1,-1)
+      ind = current_node.kmeans.predict(v)
+      current_node = current_node.children[ind[0]]
+      if current_node.IsLeafNode(hk_means_obj.max_depth):
+        fij_vector[current_node.visual_word_no] += 1
+        vw_found = True
   
-#   return p_vector
+  return fij_vector
+
+
 
 def Read_data_obj(filename):
   # Read dictionary pkl file
@@ -154,8 +166,8 @@ def main():
   database_data = Transform_data('database_ft.pkl')
   # print(database_data.shape )
 
-  branch = 2
-  depth = 2
+  branch = 4
+  depth = 3
   hk_means_obj = HKMeans(database_data, branch, depth)
   hk_means_obj.ConstructVocab(hk_means_obj.data, branch, depth, hk_means_obj.root)
 
@@ -167,12 +179,20 @@ def main():
   # p_vector = Binary_presence_vector(database_dict[1], hk_means_obj)
   # print(p_vector.shape)
 
-  Ki_vector = np.zeros((4,1), dtype=int)
+  Ki_vector = np.zeros((hk_means_obj.vw_no,1), dtype=int)
   for key in database_dict:
     obj_vectors = database_dict[key]
     p_vector = Binary_presence_vector(obj_vectors, hk_means_obj)
     Ki_vector += p_vector
+  
   print(Ki_vector)
+  np.save('b4_d3_Ki', Ki_vector)
+
+  hk_means_obj.Assign_Ki(Ki_vector, hk_means_obj.root)
+
+  for key in database_dict:
+    obj_vectors = database_dict[key]
+    fij_vector = Fij_vector(obj_vectors, hk_means_obj)
 
 
 

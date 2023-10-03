@@ -15,8 +15,9 @@ class Tree:
     self.kmeans = None
 
 
-  def IsEmpty(self):
-    return len(self.data) == 0
+  def IsEmpty(self, b):
+    # return len(self.data) == 0 old version
+    return len(self.data) <= b+1
   
   def cluster(self, branch_factor):
     #use KMeans algorithnm on data
@@ -52,7 +53,7 @@ class HKMeans():
     
   
   def ConstructVocab(self, data, b, depth, node):
-    if depth != 0 and not node.IsEmpty():
+    if depth != 0 and not node.IsEmpty(b):
       node.cluster(self.b)
       for child in node.children:
         self.ConstructVocab(child.data, self.b, depth-1, child)
@@ -63,7 +64,7 @@ class HKMeans():
     if node.IsLeafNode(self.max_depth):
       node.visual_word_no = self.vw_no
       self.vw_no += 1
-    elif not node.IsEmpty():
+    elif not node.IsEmpty(self.b):
       for child in node.children:
         self.No_visualWords(child)
     else:
@@ -73,7 +74,7 @@ class HKMeans():
     if node.IsLeafNode(self.max_depth):
       K = 50
       node.logK_Ki = np.log(K/Ki_vector[node.visual_word_no])
-    elif not node.IsEmpty():
+    elif not node.IsEmpty(self.b):
       for child in node.children:
         self.Assign_Ki(Ki_vector, child)
     else:
@@ -157,6 +158,9 @@ def BPandFij(obj_vectors, hk_means_):
         p_vector[current_node.visual_word_no] = 1
         fij_vector[current_node.visual_word_no] += 1
         vw_found = True
+      elif current_node.IsEmpty(hk_means_obj.b):
+        vw_found = True
+      
   
   return p_vector, fij_vector
 
@@ -200,31 +204,31 @@ def main():
   database_data = Transform_data('database_ft.pkl')
   # print(database_data.shape )
 
-  branch = 4
-  depth = 3
+  branch = 5
+  depth = 7
   hk_means_obj = HKMeans(database_data, branch, depth)
   hk_means_obj.ConstructVocab(hk_means_obj.data, branch, depth, hk_means_obj.root)
 
   hk_means_obj.No_visualWords(hk_means_obj.root)
   # print(hk_means_obj.vw_no)
 
-  # database_dict = Read_data_obj('database_ft.pkl')
+  database_dict = Read_data_obj('database_ft.pkl')
 
-  # Ki_vector = np.zeros((hk_means_obj.vw_no,1), dtype=int)
-  # fij_vectors = {}
-  # for key in database_dict:
-  #   obj_vectors = database_dict[key]
-  #   p_vector, fij = BPandFij(obj_vectors, hk_means_obj)
-  #   Ki_vector += p_vector
-  #   fij_vectors[key] = fij
+  Ki_vector = np.zeros((hk_means_obj.vw_no,1), dtype=int)
+  fij_vectors = {}
+  for key in database_dict:
+    obj_vectors = database_dict[key]
+    p_vector, fij = BPandFij(obj_vectors, hk_means_obj)
+    Ki_vector += p_vector
+    fij_vectors[key] = fij
   
-  # print(Ki_vector)
-  # np.save('b4_d3_Ki', Ki_vector)
-  # with open('b4_d3_Fij.pkl', 'wb') as fp:
-  #   pickle.dump(fij_vectors, fp)
+  print(Ki_vector)
+  np.save('b5_d7_Ki', Ki_vector)
+  with open('b5_d7_Fij.pkl', 'wb') as fp:
+    pickle.dump(fij_vectors, fp)
   
 
-  # hk_means_obj.Assign_Ki(Ki_vector, hk_means_obj.root)
+  hk_means_obj.Assign_Ki(Ki_vector, hk_means_obj.root)
 
   
 
@@ -235,7 +239,8 @@ def main():
 
   #Ki and Fij commented above for database extraction
 
-  Ki_v = np.load('b4_d3_Ki.npy')
+  Ki_v = np.load('b5_d7_Ki.npy')
+  print(len(Ki_v))
   TF_IDF_scores_q = query(hk_means_obj,Ki_v)
 
 def query(hkmeans, Ki_v):
@@ -247,7 +252,7 @@ def query(hkmeans, Ki_v):
     p_vector, fij = BPandFij(obj_vectors, hkmeans)
     fij_vectors[key] = fij
 
-  with open('b4_d3_Fij_query.pkl', 'wb') as fp:
+  with open('b5_d7_Fij_query.pkl', 'wb') as fp:
     pickle.dump(fij_vectors, fp)  
 
   TF_IDF_scores_query = np.zeros((hkmeans.vw_no, 50)) 
@@ -258,11 +263,11 @@ def query(hkmeans, Ki_v):
   return TF_IDF_scores_query
 
 def TF_IDF_comparison():
-  with open('b4_d3_Fij_query.pkl', 'rb') as fp:
+  with open('b5_d7_Fij_query.pkl', 'rb') as fp:
     fij_query = pickle.load(fp)
-  with open('b4_d3_Fij.pkl', 'rb') as fp:
+  with open('b5_d7_Fij.pkl', 'rb') as fp:
     fij_datab = pickle.load(fp)
-  Ki_v = np.load('b4_d3_Ki.npy')
+  Ki_v = np.load('b5_d7_Ki.npy')
    
   # Fj_q = np.zeros((len(Ki_v), 50)) 
   # Fj_d = np.zeros((len(Ki_v), 50))  
@@ -271,6 +276,8 @@ def TF_IDF_comparison():
 
   for i, key in enumerate(fij_datab):
     for val in fij_datab[key]:
+      # if key == 1 : #del this
+      #   print(val) #delete this
       Fj_d[i] += val
 
   for i, key in enumerate(fij_query):
@@ -282,16 +289,17 @@ def TF_IDF_comparison():
   TF_IDF_scores_query = np.zeros((len(Ki_v), 50)) 
   for i, key in enumerate(fij_query):
     for j, ki in enumerate(Ki_v):
-      TF_IDF_scores_query[j,i] = fij_query[key][j]/len(Fj_q[i]) * np.log(50/ki)
+      TF_IDF_scores_query[j,i] = fij_query[key][j]/Fj_q[i] * np.log(50/ki)
 
   for i, key in enumerate(fij_datab):
     for j, ki in enumerate(Ki_v):      
-      TF_IDF_scores_datab[j,i] = fij_datab[key][j]/len(Fj_d[i]) * np.log(50/ki)
+      TF_IDF_scores_datab[j,i] = fij_datab[key][j]/Fj_d[i] * np.log(50/ki)
+    
 
   TFIDF_query_comp = np.zeros((25, 25)) #query x datab
   for i in range(25): #only look at first 25 objects because of discrepancy in given data
     for j in range(25):
-      temp = TF_IDF_scores_datab[:,j] - TF_IDF_scores_query[:,j]
+      temp = TF_IDF_scores_datab[:,j] - TF_IDF_scores_query[:,i]
       TFIDF_query_comp[i,j] = np.linalg.norm(temp)
 
   # TFIDF_sorted = np.sort(TFIDF_query_comp, axis = 1)
@@ -311,7 +319,17 @@ def TF_IDF_comparison():
   print(avg_top1)
   print(avg_top5)
   # print(TFIDF_argsort)
-  print(TF_IDF_scores_datab)
+  # print(TFIDF_query_comp)
+  # database_dict = Read_data_obj('database_ft.pkl')
+
+  # print(TFIDF_argsort)
+  # print(TF_IDF_scores_datab)
+  # print(TF_IDF_scores_query)
+  # print(fij_datab)
+  # print(fij_query)
+  # print(Fj_d)
+  # print(Fj_q)
+  
 
 
 # main()

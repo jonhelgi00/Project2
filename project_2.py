@@ -1,14 +1,35 @@
 import numpy as np
 from sklearn.cluster import KMeans
+import pickle
+
+def Read_Db(filename):
+  with open(filename, 'rb') as fp:
+    database_ft = pickle.load(fp)
+  
+  database_ft_ls = []
+  for key in database_ft:
+    for i in range(3):
+      for v in database_ft[key][i]:
+        database_ft_ls.append(v)
+      # print(len(database_ft[key][i]))
+
+  data = np.zeros((len(database_ft_ls), len(database_ft_ls[0])))
+  for i,v in enumerate(database_ft_ls):
+    data[i,:] = v
+  
+  return data
 
 # Load server KP descriptors
-S = np.load('descriptors_150k.mat', allow_pickle=True)
-d = np.array(S['descriptors']).T
-d = d[np.lexsort((d[:, 128],))]
+# S = np.load('descriptors_150k.mat', allow_pickle=True)
+# d = np.array(S['descriptors']).T
+# d = d[np.lexsort((d[:, 127],))]
+d = Read_Db('database_ft.pkl')
+print(d.shape)
 
 # Build voc. tree
 b = 4
 depth = 5
+
 
 def hi_kmeans(data, b, depth):
     num_samples, num_features = data.shape
@@ -72,21 +93,22 @@ def hi_push(tree, data):
     
     return path
 
-tree, idx = hi_kmeans(d[:, :128], b, depth)
+tree, idx = hi_kmeans(d[:, :127], b, depth)
 tree['depth'] = depth
 tree['b'] = b
 idx = np.fliplr(idx)
 words = np.unique(idx, axis=0)
 
 # Compute TF-IDF weights for each visual word (w(i,j))
-K = np.max(d[:, 128])  # # total number of obj
+# K = np.max(d[:, 127])  # # total number of obj
+K = 50
 F = np.zeros((K, 1))  # # of words in object j
 Ki = np.zeros((1, len(words)))  # # of obj containing word i
 f = np.zeros((K, len(words)))  # # of times word i appears in obj j
 
 for i in range(len(words)):
     occurrences = np.sum(np.all(idx == words[i], axis=1), axis=0) == depth
-    obj_occ = d[:, 128] * np.double(occurrences)
+    obj_occ = d[:, 127] * np.double(occurrences)
     for j in range(K):
         f[j, i] = np.sum(obj_occ == j)
         F[j, 0] += f[j, i]
@@ -106,12 +128,12 @@ perm = np.random.permutation(d_Q.shape[0])
 sel = perm[:int(perc * d_Q.shape[0])]
 d_Q = d_Q[sel, :]
 # Order by object
-d_Q = d_Q[np.lexsort((d_Q[:, 128],))]
+d_Q = d_Q[np.lexsort((d_Q[:, 127],))]
 
 # Push every KP into the vocabulary tree and find which path follows
 query_paths = np.zeros((d_Q.shape[0], depth), dtype=int)
 for q in range(d_Q.shape[0]):
-    aux = hi_push(tree, d_Q[q, :128])
+    aux = hi_push(tree, d_Q[q, :127])
     query_paths[q, :aux.shape[0]] = aux
 
 # Assign a visual word to each KP
@@ -121,12 +143,12 @@ for k in range(len(words)):
     kp_words = np.double(index) * k + kp_words
 
 # Build score matrix
-K_Q = np.max(d_Q[:, 128])  # Number of query objects
+K_Q = np.max(d_Q[:, 127])  # Number of query objects
 score = np.zeros((K_Q, K))  # Scores of every query obj to every server obj
 
 for k in range(K_Q):
     aux = np.zeros((1, K))
-    objQ_words = np.double(d_Q[:, 128] == k) * kp_words
+    objQ_words = np.double(d_Q[:, 127] == k) * kp_words
     for i in range(len(words)):
         rep_word = np.sum(objQ_words == i)  # how many times word i appears in query object k
         for j in range(K):

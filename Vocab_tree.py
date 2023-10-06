@@ -204,8 +204,8 @@ def main():
   database_data = Transform_data('database_ft.pkl')
   # print(database_data.shape )
 
-  branch = 5
-  depth = 7
+  branch = 4
+  depth = 3
   hk_means_obj = HKMeans(database_data, branch, depth)
   hk_means_obj.ConstructVocab(hk_means_obj.data, branch, depth, hk_means_obj.root)
 
@@ -263,11 +263,11 @@ def query(hkmeans, Ki_v):
   return TF_IDF_scores_query
 
 def TF_IDF_comparison():
-  with open('b5_d7_Fij_query.pkl', 'rb') as fp:
+  with open('b4_d3_Fij_query.pkl', 'rb') as fp:
     fij_query = pickle.load(fp)
-  with open('b5_d7_Fij.pkl', 'rb') as fp:
+  with open('b4_d3_Fij.pkl', 'rb') as fp:
     fij_datab = pickle.load(fp)
-  Ki_v = np.load('b5_d7_Ki.npy')
+  Ki_v = np.load('b4_d3_Ki.npy')
    
   # Fj_q = np.zeros((len(Ki_v), 50)) 
   # Fj_d = np.zeros((len(Ki_v), 50))  
@@ -295,6 +295,8 @@ def TF_IDF_comparison():
     for j, ki in enumerate(Ki_v):      
       TF_IDF_scores_datab[j,i] = fij_datab[key][j]/Fj_d[i] * np.log(50/ki)
     
+  # np.save('TFIDF_db_b4_d3', TF_IDF_scores_datab)
+  # np.save('TFIDF_q_b4_d3', TF_IDF_scores_query)
 
   TFIDF_query_comp = np.zeros((25, 25)) #query x datab
   for i in range(25): #only look at first 25 objects because of discrepancy in given data
@@ -318,17 +320,17 @@ def TF_IDF_comparison():
   avg_top5 = np.sum(top5_recall) / len(top5_recall)
   print(avg_top1)
   print(avg_top5)
-  # print(TFIDF_argsort)
-  # print(TFIDF_query_comp)
+  # print(len(Ki_v))
+  print(TFIDF_query_comp)
   # database_dict = Read_data_obj('database_ft.pkl')
 
-  # print(TFIDF_argsort)
+  print(TFIDF_argsort)
   # print(TF_IDF_scores_datab)
   # print(TF_IDF_scores_query)
   # print(fij_datab)
-  # print(fij_query)
   # print(Fj_d)
   # print(Fj_q)
+  # print(*Ki_v)
   
 
 

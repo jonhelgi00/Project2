@@ -27,6 +27,7 @@ def Extract_features_database():
 
   for fname in imgDict:
     string = fname[3:5]
+    Error = False
 
     try:
       if "_" in string:
@@ -35,25 +36,39 @@ def Extract_features_database():
         obj_no = int(string)
       print(obj_no)
     except:
-      print(f"fname obj_no extraction not working")   
+      print(f"fname obj_no extraction not working") 
+      Error = True  
+
+    
+    try:
+      if not Error:
+        gray = cv2.cvtColor(imgDict[fname], cv2.COLOR_BGR2GRAY)
+        kp, des_temp = sift.detectAndCompute(gray, None)
+        print(f"Number of keypoints in image: {len(kp)}")
+    except:
+      print(f"Kp extraction not working for fname {fname}")
+      Error = True
 
     try:
-      gray = cv2.cvtColor(imgDict[fname], cv2.COLOR_BGR2GRAY)
-      kp, des_temp = sift.detectAndCompute(gray, None)
-      print(f"Number of keypoints in image: {len(kp)}")
-      if obj_no in obj_features:
-        obj_features[obj_no].append(des_temp)
-      else:
-        obj_features[obj_no] = des_temp
-
-      if obj_no in kpNoDict:
-        kpNoDict[obj_no] += len(kp)
-      else:
-        kpNoDict[obj_no] = len(kp)
-    
+      if not Error:
+        if obj_no in obj_features:
+          obj_features[obj_no] = []
+          obj_features[obj_no].append(des_temp)
+        else:
+          obj_features[obj_no] = des_temp
     except:
-      print(f"fname {fname} kp extraction not working")
+      print(f"obj_features Dict assignment not working")
+      Error = True
 
+    try:
+      if not Error:
+        if obj_no in kpNoDict:
+          kpNoDict[obj_no] += len(kp)
+        else:
+          kpNoDict[obj_no] = len(kp)
+    except:
+      print(f"kpNoDict assignment not working for {fname}")
+  
   avg_obj = 0
   avg_img = 0
   for kpNo in kpNoDict.values():
@@ -70,8 +85,8 @@ with open('database_ft_new.pkl', 'wb') as fp:
   pickle.dump(database_ft, fp)
 print(f"avg_obj: {avg_obj}")
 print(f"avg_img: {avg_img}")
-#3336 features per object
-#1111 features per image
+#9516 features per object
+#3172 features per image
 
 # def Extract_features_query():
 

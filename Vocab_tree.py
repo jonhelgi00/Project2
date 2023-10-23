@@ -90,9 +90,10 @@ def Transform_data(filename):
   
   database_ft_ls = []
   for key in database_ft:
-    for i in range(3):
-      for v in database_ft[key][i]:
-        database_ft_ls.append(v)
+    # for i in range(3):
+    # print(len(database_ft[key]))
+    for v in database_ft[key][0]:
+      database_ft_ls.append(v)
       # print(len(database_ft[key][i]))
 
   data = np.zeros((len(database_ft_ls), len(database_ft_ls[0])))
@@ -175,9 +176,9 @@ def Read_data_obj(filename):
   temp_ls = []
   for key in database_ft:
     temp_ls = []
-    for i in range(3):
-      for v in database_ft[key][i]:
-        temp_ls.append(v)
+    # for i in range(3):
+    for v in database_ft[key][0]:
+      temp_ls.append(v)
     data_dict[key] = temp_ls
   
   return data_dict
@@ -193,6 +194,7 @@ def Read_query_obj(filename):
   temp_ls = []
   for key in query_ft:
     temp_ls = []
+    print(len(query_ft[key]))
     for v in query_ft[key]:
       temp_ls.append(v)
     data_dict[key] = temp_ls
@@ -201,7 +203,7 @@ def Read_query_obj(filename):
 
 def main():
 
-  database_data = Transform_data('database_ft.pkl')
+  database_data = Transform_data('database_ft_new.pkl')
   # print(database_data.shape )
 
   branch = 4
@@ -212,7 +214,7 @@ def main():
   hk_means_obj.No_visualWords(hk_means_obj.root)
   # print(hk_means_obj.vw_no)
 
-  database_dict = Read_data_obj('database_ft.pkl')
+  database_dict = Read_data_obj('database_ft_new.pkl')
 
   Ki_vector = np.zeros((hk_means_obj.vw_no,1), dtype=int)
   fij_vectors = {}
@@ -223,8 +225,8 @@ def main():
     fij_vectors[key] = fij
   
   print(Ki_vector)
-  np.save('b5_d7_Ki', Ki_vector)
-  with open('b5_d7_Fij.pkl', 'wb') as fp:
+  np.save('b4_d3_Ki_new', Ki_vector)
+  with open('b4_d3_Fij_new.pkl', 'wb') as fp:
     pickle.dump(fij_vectors, fp)
   
 
@@ -239,12 +241,13 @@ def main():
 
   #Ki and Fij commented above for database extraction
 
-  Ki_v = np.load('b5_d7_Ki.npy')
+  Ki_v = np.load('b4_d3_Ki_new.npy')
   print(len(Ki_v))
   TF_IDF_scores_q = query(hk_means_obj,Ki_v)
 
 def query(hkmeans, Ki_v):
-  query_dict = Read_query_obj('query_ft.pkl')
+  query_dict = Read_query_obj('query_ft_new.pkl')
+  
   
   fij_vectors = {}
   for key in query_dict:
@@ -252,7 +255,7 @@ def query(hkmeans, Ki_v):
     p_vector, fij = BPandFij(obj_vectors, hkmeans)
     fij_vectors[key] = fij
 
-  with open('b5_d7_Fij_query.pkl', 'wb') as fp:
+  with open('b4_d3_Fij_query_new.pkl', 'wb') as fp:
     pickle.dump(fij_vectors, fp)  
 
   TF_IDF_scores_query = np.zeros((hkmeans.vw_no, 50)) 
@@ -263,53 +266,53 @@ def query(hkmeans, Ki_v):
   return TF_IDF_scores_query
 
 def TF_IDF_comparison():
-  with open('b4_d3_Fij_query.pkl', 'rb') as fp:
+  with open('b4_d3_Fij_query_new.pkl', 'rb') as fp:
     fij_query = pickle.load(fp)
-  with open('b4_d3_Fij.pkl', 'rb') as fp:
+  with open('b4_d3_Fij_new.pkl', 'rb') as fp:
     fij_datab = pickle.load(fp)
-  Ki_v = np.load('b4_d3_Ki.npy')
+  Ki_v = np.load('b4_d3_Ki_new.npy')
    
   # Fj_q = np.zeros((len(Ki_v), 50)) 
   # Fj_d = np.zeros((len(Ki_v), 50))  
   Fj_q = np.zeros((50,1)) 
   Fj_d = np.zeros((50,1))  
 
-  for i, key in enumerate(fij_datab):
+  for key in fij_datab:
     for val in fij_datab[key]:
       # if key == 1 : #del this
       #   print(val) #delete this
-      Fj_d[i] += val
+      Fj_d[key-1] += val
 
-  for i, key in enumerate(fij_query):
+  for key in fij_query:
     for val in fij_query[key]:
-      Fj_q[i] += val
+      Fj_q[key-1] += val
 
   
   TF_IDF_scores_datab = np.zeros((len(Ki_v), 50)) 
   TF_IDF_scores_query = np.zeros((len(Ki_v), 50)) 
-  for i, key in enumerate(fij_query):
+  for key in fij_query:
     for j, ki in enumerate(Ki_v):
-      TF_IDF_scores_query[j,i] = fij_query[key][j]/Fj_q[i] * np.log(50/ki)
+      TF_IDF_scores_query[j,key-1] = fij_query[key][j]/Fj_q[key-1] * np.log(50/ki)
 
-  for i, key in enumerate(fij_datab):
-    for j, ki in enumerate(Ki_v):      
-      TF_IDF_scores_datab[j,i] = fij_datab[key][j]/Fj_d[i] * np.log(50/ki)
+  for key in fij_datab:
+    for j, ki in enumerate(Ki_v):
+      TF_IDF_scores_datab[j,key-1] = fij_datab[key][j]/Fj_d[key-1] * np.log(50/ki)
     
   # np.save('TFIDF_db_b4_d3', TF_IDF_scores_datab)
   # np.save('TFIDF_q_b4_d3', TF_IDF_scores_query)
 
-  TFIDF_query_comp = np.zeros((25, 25)) #query x datab
-  for i in range(25): #only look at first 25 objects because of discrepancy in given data
-    for j in range(25):
+  TFIDF_query_comp = np.zeros((50, 50)) #query x datab
+  for i in range(50): 
+    for j in range(50):
       temp = TF_IDF_scores_datab[:,j] - TF_IDF_scores_query[:,i]
       TFIDF_query_comp[i,j] = np.linalg.norm(temp)
 
   # TFIDF_sorted = np.sort(TFIDF_query_comp, axis = 1)
   TFIDF_argsort = np.argsort(TFIDF_query_comp, axis = 1)
-  top1_recall = np.zeros((25,1))
-  top5_recall = np.zeros((25,1))
+  top1_recall = np.zeros((50,1))
+  top5_recall = np.zeros((50,1))
 
-  for i in range(25):
+  for i in range(50):
     if TFIDF_argsort[i,0] == i:
       top1_recall[i] = 1
     for j in range(5):
@@ -321,10 +324,10 @@ def TF_IDF_comparison():
   print(avg_top1)
   print(avg_top5)
   # print(len(Ki_v))
-  print(TFIDF_query_comp)
+  # print(TFIDF_query_comp)
   # database_dict = Read_data_obj('database_ft.pkl')
 
-  print(TFIDF_argsort)
+  print(*TFIDF_argsort)
   # print(TF_IDF_scores_datab)
   # print(TF_IDF_scores_query)
   # print(fij_datab)
@@ -333,6 +336,6 @@ def TF_IDF_comparison():
   # print(*Ki_v)
   
 
-
-# main()
-TF_IDF_comparison()
+if __name__ == "__main__":
+  # main()
+  TF_IDF_comparison()

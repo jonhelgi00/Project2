@@ -206,8 +206,8 @@ def main():
   database_data = Transform_data('database_ft_new.pkl')
   # print(database_data.shape )
 
-  branch = 4
-  depth = 3
+  branch = 5
+  depth = 7
   hk_means_obj = HKMeans(database_data, branch, depth)
   hk_means_obj.ConstructVocab(hk_means_obj.data, branch, depth, hk_means_obj.root)
 
@@ -225,9 +225,9 @@ def main():
     fij_vectors[key] = fij
   
   print(Ki_vector)
-  np.save('b4_d3_Ki_new', Ki_vector)
-  with open('b4_d3_Fij_new.pkl', 'wb') as fp:
-    pickle.dump(fij_vectors, fp)
+  # np.save('b5_d7_Ki_new', Ki_vector)
+  # with open('b5_d7_Fij_new.pkl', 'wb') as fp:
+  #   pickle.dump(fij_vectors, fp)
   
 
   hk_means_obj.Assign_Ki(Ki_vector, hk_means_obj.root)
@@ -241,9 +241,12 @@ def main():
 
   #Ki and Fij commented above for database extraction
 
-  Ki_v = np.load('b4_d3_Ki_new.npy')
-  print(len(Ki_v))
-  TF_IDF_scores_q = query(hk_means_obj,Ki_v)
+  Ki_v = np.load('b5_d7_Ki_new.npy')
+  # print(len(Ki_v))
+  # TF_IDF_scores_q = query(hk_means_obj,Ki_v)
+  ratio = 0.9
+  query_ratio(hk_means_obj, Ki_v, ratio)
+
 
 def query(hkmeans, Ki_v):
   query_dict = Read_query_obj('query_ft_new.pkl')
@@ -255,7 +258,7 @@ def query(hkmeans, Ki_v):
     p_vector, fij = BPandFij(obj_vectors, hkmeans)
     fij_vectors[key] = fij
 
-  with open('b4_d3_Fij_query_new.pkl', 'wb') as fp:
+  with open('b5_d7_Fij_query_new.pkl', 'wb') as fp:
     pickle.dump(fij_vectors, fp)  
 
   TF_IDF_scores_query = np.zeros((hkmeans.vw_no, 50)) 
@@ -266,11 +269,11 @@ def query(hkmeans, Ki_v):
   return TF_IDF_scores_query
 
 def TF_IDF_comparison():
-  with open('b4_d3_Fij_query_new.pkl', 'rb') as fp:
+  with open('b5_d7_Fij_query_09.pkl', 'rb') as fp:
     fij_query = pickle.load(fp)
-  with open('b4_d3_Fij_new.pkl', 'rb') as fp:
+  with open('b5_d7_Fij_new.pkl', 'rb') as fp:
     fij_datab = pickle.load(fp)
-  Ki_v = np.load('b4_d3_Ki_new.npy')
+  Ki_v = np.load('b5_d7_Ki_new.npy')
    
   # Fj_q = np.zeros((len(Ki_v), 50)) 
   # Fj_d = np.zeros((len(Ki_v), 50))  
@@ -327,15 +330,38 @@ def TF_IDF_comparison():
   # print(TFIDF_query_comp)
   # database_dict = Read_data_obj('database_ft.pkl')
 
-  print(*TFIDF_argsort)
+  # print(*TFIDF_argsort)
   # print(TF_IDF_scores_datab)
   # print(TF_IDF_scores_query)
   # print(fij_datab)
   # print(Fj_d)
   # print(Fj_q)
   # print(*Ki_v)
+
+def query_ratio(hkmeans, Ki_v, ratio):
+  query_dict = Read_query_obj('query_ft_new.pkl')
+  
+  fij_vectors = {}
+  for key in query_dict:
+    N = len(query_dict[key])
+    obj_vectors = query_dict[key][:int(ratio*N)]
+    p_vector, fij = BPandFij(obj_vectors, hkmeans)
+    fij_vectors[key] = fij
+
+  with open('b5_d7_Fij_query_09.pkl', 'wb') as fp:
+    pickle.dump(fij_vectors, fp)  
+
+  # TF_IDF_scores_query = np.zeros((hkmeans.vw_no, 50)) 
+  # for i, key in enumerate(fij_vectors.keys()):
+  #   for j, ki in enumerate(Ki_v):
+  #     TF_IDF_scores_query[j,i] = fij_vectors[key][j]/len(query_dict[key]) * np.log(50/ki)
+
+  # return TF_IDF_scores_query
+
+
   
 
 if __name__ == "__main__":
-  # main()
+  main()
+  # query_ratio(ratio)
   TF_IDF_comparison()
